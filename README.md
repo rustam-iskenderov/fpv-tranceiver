@@ -7,7 +7,6 @@ Clone sources to each machine by running the command in terminal
 ```shell
 $ git clone https://github.com/rustam-iskenderov/fpv-tranceiver.git
 ```
-
 ### Server (Windows / Linux)
 	* Verify that your server has public IP address and can be accessible from the internet
 	* Create port forwarding for the ports: 20000, 20001, 20005, 20006 UDP
@@ -26,3 +25,7 @@ $ git clone https://github.com/rustam-iskenderov/fpv-tranceiver.git
 	* Type 'start' and press Enter to start live streaming
 	* Live video stream should show up
 	* Type 'stop' and press Enter to stop live streaming
+	
+## Setup #2, Operator has public IP address:	
+	* Open globals.py and replace the server_ip value with a local ip of your server
+	* Run server.py and clientOperator.py on the same machine
