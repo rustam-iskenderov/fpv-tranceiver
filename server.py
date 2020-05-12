@@ -9,8 +9,6 @@ import threading
 from utils import *
 from globals import *
 
-eventStopVideoStream = threading.Event()
-
 def listen_control_loop(socket_client: ConcurrentSocket):            
 
     while True:
@@ -29,40 +27,37 @@ def listen_control_loop(socket_client: ConcurrentSocket):
             logging.error('Listen control stream {}, socket.error : {}'.format(socket_client.return_address, exc))
 
 
-def listen_video_loop(socket_viewer: ConcurrentSocket):
+def listen_video_loop(socket_operator: ConcurrentSocket):
             
     while True:
         # waiting for a ping from a client, in order to create reversed connection back to the client
         try:
-            pair_data_address = socket_viewer.recv()
+            pair_data_address = socket_operator.recv()
 
             logging.info('Video loop received {} from {}'.format(pair_data_address[0], pair_data_address[1]))
             
-            if socket_viewer.is_alive(pair_data_address[0]):
-                socket_viewer.set_return_address(pair_data_address[1])
+            if socket_operator.is_alive(pair_data_address[0]):
+                socket_operator.set_return_address(pair_data_address[1])
  
         except socket.error as exc:
-            logging.error('Listen video stream {}, socket.error : {}'.format(socket_viewer.return_address, exc))
+            logging.error('Listen video stream {}, socket.error : {}'.format(socket_operator.return_address, exc))
 
 
-def redirect_video_loop(socket_viewer: ConcurrentSocket):
+def redirect_video_loop(socket_operator: ConcurrentSocket):
             
-    socket_camera_video = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    socket_camera_video.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    socket_camera_video.bind(('', port_camera_video))
+    socket_drone_video = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    socket_drone_video.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    socket_drone_video.bind(('', port_drone_video))
         
     while True:
 
-#        if eventStopVideoStream.is_set():
-#            break
-
         try:
-            pair_data_address = socket_camera_video.recvfrom(65535)
+            pair_data_address = socket_drone_video.recvfrom(65535)
 
-            socket_viewer.LOG = False
-            socket_viewer.send(pair_data_address[0])
-            logging.info('Sending video to {}'.format(socket_viewer.return_address))
-            socket_viewer.LOG = True
+            socket_operator.LOG = False
+            socket_operator.send(pair_data_address[0])
+            logging.info('Sending video to {}'.format(socket_operator.return_address))
+            socket_operator.LOG = True
 
         except socket.error as exc:
             logging.error('Redirect video stream socket.error : {}'.format(exc))
@@ -92,38 +87,38 @@ external_ip = urllib.request.urlopen('https://ident.me').read().decode('utf8')
 logging.info('Server public ip {}'.format(external_ip))
 
 
-socket_camera_ctrl = ConcurrentSocket(port_camera_control)
-socket_viewer_ctrl = ConcurrentSocket(port_viewer_control)
+socket_drone_ctrl = ConcurrentSocket(port_drone_control)
+socket_operator_ctrl = ConcurrentSocket(port_operator_control)
 
 
-thread_listen_ctrl_viewer = threading.Thread(target = listen_control_loop, args = (socket_viewer_ctrl,))
-thread_listen_ctrl_viewer.start()
+thread_listen_ctrl_operator = threading.Thread(target = listen_control_loop, args = (socket_operator_ctrl,))
+thread_listen_ctrl_operator.start()
 
-thread_listen_ctrl_camera = threading.Thread(target = listen_control_loop, args = (socket_camera_ctrl,))
-thread_listen_ctrl_camera.start()
+thread_listen_ctrl_drone = threading.Thread(target = listen_control_loop, args = (socket_drone_ctrl,))
+thread_listen_ctrl_drone.start()
 
 
-# camera <- server <- viewer (commands)
-thread_redirect_ctrl = threading.Thread(target = redirect_control_loop, args = (socket_viewer_ctrl, socket_camera_ctrl,))
+# drone <- server <- operator (commands)
+thread_redirect_ctrl = threading.Thread(target = redirect_control_loop, args = (socket_operator_ctrl, socket_drone_ctrl,))
 thread_redirect_ctrl.start()
 
-# camera -> server -> viewer (telemetry)
+# drone -> server -> operator (telemetry)
 #threadControlChannel = thread.start_new_thread(threadRedirectControlStream, (clientCameraAddress, clientViewerAddress))
 
 # creating video channel
-socket_viewer_video = ConcurrentSocket(port_viewer_video)
-thread_listen_video_viewer = threading.Thread(target = listen_video_loop, args = (socket_viewer_video,))
-thread_listen_video_viewer.start()
+socket_operator_video = ConcurrentSocket(port_operator_video)
+thread_listen_video_operator = threading.Thread(target = listen_video_loop, args = (socket_operator_video,))
+thread_listen_video_operator.start()
 
-thread_redirect_video = threading.Thread(target = redirect_video_loop, args = (socket_viewer_video,))
+thread_redirect_video = threading.Thread(target = redirect_video_loop, args = (socket_operator_video,))
 thread_redirect_video.start()
 
 
-thread_listen_ctrl_viewer.join()
-thread_listen_ctrl_camera.join()
+thread_listen_ctrl_operator.join()
+thread_listen_ctrl_drone.join()
 thread_redirect_ctrl.join()
 
-thread_listen_video_viewer.join()
+thread_listen_video_operator.join()
 thread_redirect_video.join()
 
 

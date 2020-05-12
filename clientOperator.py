@@ -7,9 +7,11 @@ import urllib.request
 from utils import *
 from globals import *
 
-def startWatchVideoStream(port):
+gstreamer_bin_path = 'd:/Software/gstreamer/1.0/x86_64/bin/'
+
+def start_watch_video_stream(port):
     #cmd = "d:\\1.0\\x86_64\\bin\\gst-launch-1.0 -e -v udpsrc port={} ! application/x-rtp, payload=96! rtpjitterbuffer ! rtph264depay ! avdec_h264 ! fpsdisplaysink sync=false text-overlay=false"
-    cmd = "d:\\1.0\\x86_64\\bin\\gst-launch-1.0 -e -v udpsrc port={} ! decodebin ! videoconvert !  fpsdisplaysink sync=false text-overlay=false"
+    cmd = gstreamer_bin_path + "gst-launch-1.0 -e -v udpsrc port={} ! decodebin ! videoconvert !  fpsdisplaysink sync=false text-overlay=false"
     cmd = cmd.format(port)
     logging.info(cmd)
 
@@ -22,18 +24,18 @@ def startWatchVideoStream(port):
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO,
                     handlers=[
-        logging.FileHandler("viewer.log"),
+        logging.FileHandler("operator.log"),
         logging.StreamHandler()
     ])
 
-logging.info('Viewer is running')
+logging.info('Operator is running')
 
 socket_control = ConcurrentSocket()
 
-thread_send_alive = threading.Thread(target = send_alive_loop, args = (socket_control, (server_ip, port_viewer_control),))
+thread_send_alive = threading.Thread(target = send_alive_loop, args = (socket_control, (server_ip, port_operator_control),))
 thread_send_alive.start()
 
-subProcess = None
+sub_process = None
 
 while True:    
 
@@ -44,23 +46,23 @@ while True:
         if string == CMD_START:
             socket_video = ConcurrentSocket()
             listen_port = socket_video.get_listen_port()
-            socket_video.send_alive((server_ip, port_viewer_video))
+            socket_video.send_alive((server_ip, port_operator_video))
             socket_video.close()
 
-            if subProcess != None:
-                subProcess.kill()
+            if sub_process != None:
+                sub_process.kill()
 
-            subProcess = startWatchVideoStream(listen_port)
+            sub_process = start_watch_video_stream(listen_port)
 
             time.sleep(1)
 
-            socket_control.sendto(CMD_START.encode('utf-8'), (server_ip, port_viewer_control))
+            socket_control.sendto(CMD_START.encode('utf-8'), (server_ip, port_operator_control))
         
         if string == CMD_STOP:
-            socket_control.sendto(CMD_STOP.encode('utf-8'), (server_ip, port_viewer_control))
+            socket_control.sendto(CMD_STOP.encode('utf-8'), (server_ip, port_operator_control))
 
-            if subProcess != None:
-                subProcess.kill()
+            if sub_process != None:
+                sub_process.kill()
 
     except socket.error as exc:
         logging.error('socket.error : {}'.format(exc))

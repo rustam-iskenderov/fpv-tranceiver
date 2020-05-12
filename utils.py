@@ -3,25 +3,6 @@ import socket
 import time
 import logging
 
-# by pinging the server we're establishing two-way connection, if client is behind NAT (e.g. 3G/4G network)
-def pingServer(ip, port, id):
-    socketClient = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    #socketClient.settimeout(2.0)
-
-    listeningPort = socketClient.getnameinfo()[1]
-        
-    while True:
-        try:
-            socketClient.sendto(id.encode('utf-8'), (ip, port))
-            break
-        except socket.error as exc:
-            logging.error('Viewer socket.error : {}'.format(exc))
-
-    socketClient.close()
-
-    return listeningPort
-
-
 class ConcurrentSocket():
 
     MSG_SIZE = 512
@@ -31,14 +12,9 @@ class ConcurrentSocket():
     LOG = True
 
     def __init__(self, port = 0):
-
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        #self.socket.settimeout(5.0)
-        #self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.socket.bind(('', port))
-
-        self.return_address = None
-                
+        self.return_address = None                
         self.msg_list = []
         self.lock_send = threading.Lock()
         self.lock_msg_list = threading.Lock()
@@ -104,4 +80,4 @@ def send_alive_loop(socket_client: ConcurrentSocket, address):
         except socket.error as exc:
             logging.error('socket.error : {}'.format(exc))
         finally:
-            time.sleep(15)
+            time.sleep(10)
