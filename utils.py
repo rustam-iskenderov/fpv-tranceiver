@@ -9,9 +9,8 @@ class ConcurrentSocket():
 
     MSG_ALIVE = 'alive'
 
-    LOG = True
-
     def __init__(self, port = 0):
+        self.logging = True
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(('', port))
         self.return_address = None                
@@ -19,12 +18,18 @@ class ConcurrentSocket():
         self.lock_send = threading.Lock()
         self.lock_msg_list = threading.Lock()
         self.condition = threading.Condition()
-        
+    
+    def enableLogging(self):
+        self.logging = True
+
+    def disableLogging(self):
+        self.logging = False
+
     def get_listen_port(self):
         return self.socket.getsockname()[1]
     
     def sendto(self, data, address):
-        if self.LOG:
+        if self.logging:
             logging.info('Sending {} from {} to {}'.format(data, self.return_address, address))
 
         with self.lock_send:

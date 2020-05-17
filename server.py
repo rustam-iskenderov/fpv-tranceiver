@@ -54,10 +54,10 @@ def redirect_video_loop(socket_operator: ConcurrentSocket):
         try:
             pair_data_address = socket_drone_video.recvfrom(65535)
 
-            socket_operator.LOG = False
+            socket_operator.disableLogging()
             socket_operator.send(pair_data_address[0])
-            logging.info('Sending video to {}'.format(socket_operator.return_address))
-            socket_operator.LOG = True
+            #logging.info('Sending video to {}'.format(socket_operator.return_address))
+            socket_operator.enableLogging()
 
         except socket.error as exc:
             logging.error('Redirect video stream socket.error : {}'.format(exc))
